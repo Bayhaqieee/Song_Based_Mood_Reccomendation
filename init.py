@@ -8,6 +8,25 @@ import ast
 # Assuming songreccomendation.py has the following functions and objects: 
 # emotion_mapping, knn, scaler, data, unique_emotions
 
+# Set page configuration
+st.set_page_config(layout="wide")
+
+# Custom CSS to increase the width
+st.markdown(
+    """
+    <style>
+    .reportview-container .main .block-container{
+        max-width: 95%;
+        padding-top: 2rem;
+        padding-right: 2rem;
+        padding-left: 2rem;
+        padding-bottom: 2rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # Load the dataset and model from songreccomendation.py (assumed already run)
 from songreccomendation import emotion_mapping, knn, scaler, data, unique_emotions
 
@@ -36,8 +55,44 @@ mood_mapping = {
     'Dramatic': {'danceability': 0.5, 'energy': 0.8, 'valence': 0.4, 'tempo': 110, 'genre': 'orchestral'}
 }
 
-# Create the input UI for user mood and optional genre
-st.header("Choose your mood and optional genre for music recommendations")
+# Zodiac to emotions mapping
+zodiac_mapping = {
+    "aries": ["energetic", "bold", "adventurous", "confident"],
+    "taurus": ["grounded", "sensual", "reliable", "calm"],
+    "gemini": ["curious", "dynamic", "adaptable", "communicative"],
+    "cancer": ["emotional", "intuitive", "nurturing", "protective"],
+    "leo": ["charismatic", "confident", "dramatic", "creative"],
+    "virgo": ["analytical", "practical", "detail-oriented", "modest"],
+    "libra": ["balanced", "charming", "diplomatic", "harmonious"],
+    "scorpio": ["intense", "passionate", "mysterious", "determined"],
+    "sagittarius": ["optimistic", "adventurous", "independent", "philosophical"],
+    "capricorn": ["disciplined", "ambitious", "responsible", "practical"],
+    "aquarius": ["innovative", "unique", "intellectual", "humanitarian"],
+    "pisces": ["empathetic", "imaginative", "sensitive", "compassionate"]
+}
+
+# MBTI to emotions mapping
+mbti_mapping = {
+    "istj": ["responsible", "reliable", "practical", "systematic"],
+    "isfj": ["dedicated", "warm", "caring", "detailed"],
+    "infj": ["visionary", "insightful", "compassionate", "idealistic"],
+    "intj": ["strategic", "independent", "analytical", "determined"],
+    "istp": ["adventurous", "practical", "analytical", "resourceful"],
+    "isfp": ["creative", "gentle", "spontaneous", "adaptable"],
+    "infp": ["idealistic", "empathic", "creative", "curious"],
+    "intp": ["innovative", "logical", "abstract", "independent"],
+    "estp": ["energetic", "practical", "spontaneous", "action-oriented"],
+    "esfp": ["outgoing", "enthusiastic", "friendly", "playful"],
+    "enfp": ["inspirational", "creative", "curious", "sociable"],
+    "entp": ["inventive", "dynamic", "quick-witted", "charismatic"],
+    "estj": ["efficient", "organized", "decisive", "practical"],
+    "esfj": ["supportive", "sociable", "empathetic", "cooperative"],
+    "enfj": ["charismatic", "empathetic", "persuasive", "organized"],
+    "entj": ["assertive", "strategic", "ambitious", "decisive"]
+}
+
+# Create the input UI for user mood, genre, zodiac sign, and MBTI type
+st.write("Choose your mood and optional genre, zodiac sign, and MBTI type for music recommendations")
 
 selected_mood = st.selectbox(
     "Select your mood:",
@@ -47,31 +102,59 @@ selected_mood = st.selectbox(
 # Optionally allow the user to input a genre
 genre_input = st.text_input("Optional: Enter a genre (leave blank to skip)")
 
+# Optionally allow the user to input a zodiac sign
+zodiac_input = st.selectbox(
+    "Optional: Select your zodiac sign:",
+    list(zodiac_mapping.keys()) + ['None']
+)
+
+# Optionally allow the user to input an MBTI type
+mbti_input = st.selectbox(
+    "Optional: Select your MBTI type:",
+    list(mbti_mapping.keys()) + ['None']
+)
+
 # Fetch mood features
 mood_features = mood_mapping[selected_mood]
 st.write(f"Mapped features for mood '{selected_mood}':")
-st.write(f"Danceability: {mood_features['danceability']}, Energy: {mood_features['energy']}, "
-         f"Valence: {mood_features['valence']}, Tempo: {mood_features['tempo']}")
 
 # Prepare input feature array
 input_features = np.array([[mood_features['danceability'], mood_features['energy'], 
                             mood_features['valence'], mood_features['tempo']]])
 
 # Function to recommend songs
-def recommend_songs(knn_model, scaler, input_features, genre=None):
+def recommend_songs(knn_model, scaler, input_features, genre=None, zodiac=None, mbti=None):
     emotion_vector = np.zeros(len(unique_emotions))  # Initialize zero vector for emotions
     
+    # Map genre to emotions
     if genre and genre.lower() in emotion_mapping:
         genre_emotions = emotion_mapping[genre.lower()]
-        # Set 1 in the corresponding emotion features
         for emotion in genre_emotions:
             if emotion in unique_emotions:
                 idx = list(unique_emotions).index(emotion)
                 emotion_vector[idx] = 1
 
+    # Map zodiac to emotions
+    if zodiac and zodiac.lower() in zodiac_mapping:
+        zodiac_emotions = zodiac_mapping[zodiac.lower()]
+        for emotion in zodiac_emotions:
+            if emotion in unique_emotions:
+                idx = list(unique_emotions).index(emotion)
+                emotion_vector[idx] = 1
+
+    # Map MBTI to emotions
+    if mbti and mbti.lower() in mbti_mapping:
+        mbti_emotions = mbti_mapping[mbti.lower()]
+        for emotion in mbti_emotions:
+            if emotion in unique_emotions:
+                idx = list(unique_emotions).index(emotion)
+                emotion_vector[idx] = 1
+
+    # Combine the user input features and emotion features
     combined_features = np.concatenate((input_features, emotion_vector.reshape(1, -1)), axis=1)
     combined_features_scaled = scaler.transform(combined_features)
     
+    # Get the nearest neighbors
     distances, indices = knn_model.kneighbors(combined_features_scaled)
     recommended_songs = []
     printed_tracks = set()  # To track and avoid duplicates
@@ -87,13 +170,13 @@ def recommend_songs(knn_model, scaler, input_features, genre=None):
     
     return recommended_songs
 
-# Recommend songs based on mood and genre
+# Recommend songs based on mood, genre, zodiac, and MBTI
 if st.button("Recommend Songs"):
-    recommendations = recommend_songs(knn, scaler, input_features, genre_input)
+    recommendations = recommend_songs(knn, scaler, input_features, genre_input, zodiac_input if zodiac_input != 'None' else None, mbti_input if mbti_input != 'None' else None)
     
     if recommendations:
         st.header("Recommended Songs:")
         for song in recommendations:
             st.write(song)
     else:
-        st.write("No recommendations found for the selected mood and genre.")
+        st.write("No recommendations found for the selected mood, genre, zodiac, and MBTI.")
