@@ -13,7 +13,21 @@ from sklearn.metrics import accuracy_score
 # Load the cleaned genres dataset
 genres_df = pd.read_csv('cleaned_genres.csv')
 
-# Expanded Genre to Emotion Mapping
+import pandas as pd
+import ast
+import numpy as np
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import NearestNeighbors
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import make_pipeline
+from sklearn.metrics import accuracy_score
+
+# Load the cleaned genres dataset
+genres_df = pd.read_csv('cleaned_genres.csv')
+
+# Expand the genre to emotion mapping
 emotion_mapping = {
     # Indie genres
     "indie psych-pop": ["dreamy", "uplifting", "psychedelic", "hopeful"],
@@ -108,14 +122,49 @@ emotion_mapping = {
     "orchestral": ["dramatic", "epic", "emotional", "cinematic"]
 }
 
-# Add more genres from the new list provided
-additional_genres = pd.read_csv('cleaned_genres.csv')
+# Zodiac to emotions mapping
+zodiac_mapping = {
+    "aries": ["energetic", "bold", "adventurous", "confident"],
+    "taurus": ["grounded", "sensual", "reliable", "calm"],
+    "gemini": ["curious", "dynamic", "adaptable", "communicative"],
+    "cancer": ["emotional", "intuitive", "nurturing", "protective"],
+    "leo": ["charismatic", "confident", "dramatic", "creative"],
+    "virgo": ["analytical", "practical", "detail-oriented", "modest"],
+    "libra": ["balanced", "charming", "diplomatic", "harmonious"],
+    "scorpio": ["intense", "passionate", "mysterious", "determined"],
+    "sagittarius": ["optimistic", "adventurous", "independent", "philosophical"],
+    "capricorn": ["disciplined", "ambitious", "responsible", "practical"],
+    "aquarius": ["innovative", "unique", "intellectual", "humanitarian"],
+    "pisces": ["empathetic", "imaginative", "sensitive", "compassionate"]
+}
 
-# Extend the emotion_genre_map with additional genres
+# MBTI to emotions mapping
+mbti_mapping = {
+    "istj": ["responsible", "reliable", "practical", "systematic"],
+    "isfj": ["dedicated", "warm", "caring", "detailed"],
+    "infj": ["visionary", "insightful", "compassionate", "idealistic"],
+    "intj": ["strategic", "independent", "analytical", "determined"],
+    "istp": ["adventurous", "practical", "analytical", "resourceful"],
+    "isfp": ["creative", "gentle", "spontaneous", "adaptable"],
+    "infp": ["idealistic", "empathic", "creative", "curious"],
+    "intp": ["innovative", "logical", "abstract", "independent"],
+    "estp": ["energetic", "practical", "spontaneous", "action-oriented"],
+    "esfp": ["outgoing", "enthusiastic", "friendly", "playful"],
+    "enfp": ["inspirational", "creative", "curious", "sociable"],
+    "entp": ["inventive", "dynamic", "quick-witted", "charismatic"],
+    "estj": ["efficient", "organized", "decisive", "practical"],
+    "esfj": ["supportive", "sociable", "empathetic", "cooperative"],
+    "enfj": ["charismatic", "empathetic", "persuasive", "organized"],
+    "entj": ["assertive", "strategic", "ambitious", "decisive"]
+}
+
+# Load additional genres and update mapping
+additional_genres = pd.read_csv('cleaned_genres.csv')
 for genre in additional_genres:
     if genre not in emotion_mapping:
-        # Assign default or common emotional tags if specific ones are not provided
-        emotion_mapping[genre] = "varied emotions, alternative, branch genre"
+        emotion_mapping[genre] = ["varied emotions, alternative, branch genre"]
+
+# Zodiac and MBTI mappings (as defined above)
 
 # List of dataset filenames
 files = [
@@ -141,13 +190,6 @@ print([col for col in data.columns if 'genre' in col.lower()])
 # Convert 'Genres' column from string representation of list to actual list
 data['Genres'] = data['Genres'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
 
-# Define the features including genre
-features = ['Genres', 'danceability', 'energy', 'valence', 'tempo' ]
-
-# Ensure that the 'genre' column exists in your data
-if 'Genres' not in data.columns:
-    raise ValueError("The 'Genres' column is missing in the dataset.")
-
 # Function to map genres to emotions
 def map_genres_to_emotions(genres_list):
     emotions = []
@@ -159,7 +201,6 @@ def map_genres_to_emotions(genres_list):
 # Apply the mapping function to each row
 data['Emotions'] = data['Genres'].apply(map_genres_to_emotions)
 
-# For KNN, convert emotion labels into numerical features
 # Create binary features for each unique emotion across all songs
 unique_emotions = set(emotion for sublist in data['Emotions'] for emotion in sublist)
 for emotion in unique_emotions:
@@ -180,34 +221,35 @@ X_scaled = scaler.fit_transform(X)
 knn = NearestNeighbors(n_neighbors=10, algorithm='ball_tree')
 knn.fit(X_scaled)
 
-# Function to take user input for features
-def get_user_input():
-    print("Please enter the following song features:")
-    danceability = float(input("Danceability (0.0 - 1.0): "))
-    energy = float(input("Energy (0.0 - 1.0): "))
-    valence = float(input("Valence (0.0 - 1.0): "))
-    tempo = float(input("Tempo (BPM): "))
-    
-    # Genre input (optional)
-    genre = input("Enter genre (optional, press Enter to skip): ").lower()
-
-    return danceability, energy, valence, tempo, genre
-
 # Function to process user input and provide recommendations
-def recommend_songs(knn_model, scaler, input_features, emotion_mapping, data, genre=None):
-    # If a genre is provided, map it to the corresponding emotions
-    emotion_vector = np.zeros(len(unique_emotions))  # Initialize zero vector for emotions
+def recommend_songs(knn_model, scaler, input_features, emotion_mapping, data, genre=None, zodiac=None, mbti=None):
+    # Initialize emotion vector
+    emotion_vector = np.zeros(len(unique_emotions))
     
+    # Map genre to emotions
     if genre:
         if genre in emotion_mapping:
             genre_emotions = emotion_mapping[genre]
-            # Set 1 in the corresponding emotion features
             for emotion in genre_emotions:
                 if emotion in unique_emotions:
                     idx = list(unique_emotions).index(emotion)
                     emotion_vector[idx] = 1
-        else:
-            print(f"Genre '{genre}' not found in emotion mapping. Using default feature set.")
+
+    # Map zodiac to emotions
+    if zodiac and zodiac.lower() in zodiac_mapping:
+        zodiac_emotions = zodiac_mapping[zodiac.lower()]
+        for emotion in zodiac_emotions:
+            if emotion in unique_emotions:
+                idx = list(unique_emotions).index(emotion)
+                emotion_vector[idx] = 1
+
+    # Map MBTI to emotions
+    if mbti and mbti.lower() in mbti_mapping:
+        mbti_emotions = mbti_mapping[mbti.lower()]
+        for emotion in mbti_emotions:
+            if emotion in unique_emotions:
+                idx = list(unique_emotions).index(emotion)
+                emotion_vector[idx] = 1
 
     # Combine the user input features and emotion features
     combined_features = np.concatenate((input_features, emotion_vector.reshape(1, -1)), axis=1)
@@ -229,12 +271,3 @@ def recommend_songs(knn_model, scaler, input_features, emotion_mapping, data, ge
         if track_name not in printed_tracks:
             print(f"Track: {track_name}\nArtist: {artist_name}\nGenres: {genres}\n")
             printed_tracks.add(track_name)
-
-# Get user input for features and genre
-danceability, energy, valence, tempo, genre = get_user_input()
-
-# Prepare the input feature array (without emotions)
-input_features = np.array([[danceability, energy, valence, tempo]])
-
-# Call the recommendation function
-recommend_songs(knn, scaler, input_features, emotion_mapping, data, genre)

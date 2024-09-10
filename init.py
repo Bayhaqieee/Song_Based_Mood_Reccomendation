@@ -20,7 +20,20 @@ mood_mapping = {
     'Sad': {'danceability': 0.3, 'energy': 0.4, 'valence': 0.2, 'tempo': 90, 'genre': 'indie'},
     'Energetic': {'danceability': 0.9, 'energy': 0.95, 'valence': 0.8, 'tempo': 140, 'genre': 'dance'},
     'Relaxed': {'danceability': 0.5, 'energy': 0.4, 'valence': 0.6, 'tempo': 100, 'genre': 'r&b'},
-    'Romantic': {'danceability': 0.7, 'energy': 0.6, 'valence': 0.8, 'tempo': 110, 'genre': 'pop'}
+    'Romantic': {'danceability': 0.7, 'energy': 0.6, 'valence': 0.8, 'tempo': 110, 'genre': 'pop'},
+    'Angry': {'danceability': 0.6, 'energy': 0.95, 'valence': 0.3, 'tempo': 130, 'genre': 'rock'},
+    'Confident': {'danceability': 0.7, 'energy': 0.8, 'valence': 0.7, 'tempo': 115, 'genre': 'pop rock'},
+    'Melancholic': {'danceability': 0.4, 'energy': 0.3, 'valence': 0.2, 'tempo': 85, 'genre': 'blues'},
+    'Optimistic': {'danceability': 0.8, 'energy': 0.7, 'valence': 0.9, 'tempo': 125, 'genre': 'indie pop'},
+    'Pensive': {'danceability': 0.5, 'energy': 0.5, 'valence': 0.4, 'tempo': 95, 'genre': 'folk'},
+    'Adventurous': {'danceability': 0.7, 'energy': 0.8, 'valence': 0.6, 'tempo': 130, 'genre': 'rock'},
+    'Playful': {'danceability': 0.9, 'energy': 0.9, 'valence': 0.8, 'tempo': 135, 'genre': 'funk'},
+    'Nostalgic': {'danceability': 0.6, 'energy': 0.5, 'valence': 0.7, 'tempo': 100, 'genre': 'shoegaze'},
+    'Intense': {'danceability': 0.5, 'energy': 0.95, 'valence': 0.3, 'tempo': 140, 'genre': 'metal'},
+    'Soothing': {'danceability': 0.4, 'energy': 0.3, 'valence': 0.5, 'tempo': 85, 'genre': 'ambient'},
+    'Dreamy': {'danceability': 0.6, 'energy': 0.5, 'valence': 0.8, 'tempo': 95, 'genre': 'dream pop'},
+    'Uplifted': {'danceability': 0.8, 'energy': 0.7, 'valence': 0.9, 'tempo': 125, 'genre': 'dance pop'},
+    'Dramatic': {'danceability': 0.5, 'energy': 0.8, 'valence': 0.4, 'tempo': 110, 'genre': 'orchestral'}
 }
 
 # Create the input UI for user mood and optional genre
